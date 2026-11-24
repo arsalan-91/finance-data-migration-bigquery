@@ -25,6 +25,8 @@ Current phase: Phase 0
   zero_amount, unknown_cost_center, invalid_posting_date
 - Golden rule: raw rows per run = staging + quarantine
 - Loads are idempotent (MERGE on key). Running a load twice must not duplicate rows.
+- PostgreSQL raw source tables have no PRIMARY KEY and no NOT NULL constraints: COPY reads
+  empty CSV fields as NULL, and missing_key rows must reach fin_raw so dbt can detect them.
 
 ## Conventions
 - dbt: stg_<source>__<entity>, int_<entity>__<verb>, fct_<subject>_<grain>, dim_<entity>
