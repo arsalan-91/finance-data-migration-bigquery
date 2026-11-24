@@ -1,0 +1,52 @@
+# --- Python virtual environment ---
+.venv/
+venv/
+
+# --- Python cache and tool caches ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# --- Generated data (reproducible from the generator) ---
+/data/
+
+# --- Logs (project, dbt, Airflow) ---
+logs/
+*.log
+
+# --- Environment files (secrets) ---
+.env
+.env.*
+!.env.example
+
+# --- Keys and credentials ---
+*.pem
+*.key
+*.json.key
+*credentials*.json
+service-account*.json
+
+# --- dbt generated files ---
+target/
+dbt_packages/
+
+# --- dbt connection profile (keep only profiles.yml.example in Git) ---
+profiles.yml
+
+# --- Terraform state and plugins ---
+*.tfstate*
+.terraform/
+
+# --- VS Code personal settings ---
+.vscode/*
+!.vscode/extensions.json
+
+# --- Claude Code personal settings ---
+.claude/settings.local.json
+CLAUDE.local.md
+
+# --- OS files ---
+Thumbs.db
+Desktop.ini
+.DS_Store
