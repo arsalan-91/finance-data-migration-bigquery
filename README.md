@@ -12,7 +12,7 @@ row-count reconciliation and failure alerts.
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Repository, synthetic data generator, sample data | Done |
-| 1 | PostgreSQL 16 in Docker, GCP project, BigQuery datasets | Planned |
+| 1 | PostgreSQL 16 in Docker, GCP project, BigQuery datasets | In progress (PostgreSQL source done, GCP pending) |
 | 2 | Incremental extract & load (watermark, load jobs, run tracker) | Planned |
 | 3 | dbt: sources, quarantine, staging, intermediate, marts, tests | Planned |
 | 4 | Airflow DAG: load → dbt build → reconcile, alerts | Planned |
@@ -113,12 +113,79 @@ Expected result: 8 cost centers, 18 headers, 83 line items, and
 1 `missing_key`, 2 `line_without_header`, 2 `unbalanced_document`,
 1 `zero_amount`, 2 `unknown_cost_center`, 1 `invalid_posting_date`.
 
+## Run the PostgreSQL source
+
+Requirements: Docker Desktop (WSL 2 backend on Windows). PostgreSQL 16.16 runs in a
+container that listens on `127.0.0.1:5433` only. Generate the full dataset in `data/` first
+(see [Generate data](#generate-data)).
+
+### 1. Create `.env` with a strong password
+
+`.env` is git-ignored. The commands write a random 64-character hex password into it
+without printing it.
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes); $rng.Dispose()
+$pw = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+(Get-Content .env) -replace '^POSTGRES_PASSWORD=.*$', "POSTGRES_PASSWORD=$pw" | Set-Content .env -Encoding ascii
+Remove-Variable pw, bytes, rng
+```
+
+```bash
+# macOS / Linux
+password="$(openssl rand -hex 32)"
+sed "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${password}/" .env.example > .env
+unset password
+```
+
+Do not run `docker compose config` without `--quiet`: it prints the resolved password.
+
+### 2. Start the container
+
+```bash
+docker compose config --quiet
+docker compose up -d
+docker compose ps
+```
+
+Expected status: `Up ... (healthy)` with ports `127.0.0.1:5433->5432/tcp`.
+
+### 3. Create the source tables and load the CSV files
+
+```bash
+docker compose exec -T postgres sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/01_create_source_tables.sql'
+docker compose exec -T postgres sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB -f /sql/02_load_csv.sql'
+```
+
+The load is a full reload (`TRUNCATE` + `\copy` in one transaction), so it can be run
+again safely. Expected row counts for the default dataset:
+
+| table_name | row_count |
+|---|---|
+| `csks` | 8 |
+| `cobk` | 993 |
+| `coep` | 4023 |
+| `coep_null_buzei` | 8 |
+
+`coep_null_buzei` shows that empty CSV fields arrive as `NULL`, so `missing_key` rows
+reach the raw layer for dbt to quarantine.
+
+To stop the container and keep the data: `docker compose down`.
+`docker compose down -v` also deletes the data volume.
+
 ## Repository layout
 
 ```
 .
 ├── src/generator/generate_data.py   # synthetic COBK/COEP generator
 ├── sample_data/                     # small committed sample (csks, cobk, coep)
+├── sql/postgres/                    # source schema and CSV load scripts
+├── docker-compose.yml               # local PostgreSQL 16.16 (127.0.0.1:5433)
+├── .env.example                     # environment variable names (copy to .env)
 ├── data/                            # full generated data (git-ignored)
 ├── CLAUDE.md                        # instructions for AI coding assistants
 ├── README.md                        # this file
@@ -130,7 +197,7 @@ Expected result: 8 cost centers, 18 headers, 83 line items, and
 - Synthetic data only; no real company data.
 - No secrets in the repository: `.env` files, keys and credentials are git-ignored.
 - Google Cloud access will use Application Default Credentials. No service account key files.
-- Docker ports will bind to `127.0.0.1` only.
+- Docker ports bind to `127.0.0.1` only, and the database password lives only in the git-ignored `.env`.
 - BigQuery: batch load jobs only (no streaming inserts) and partitioned tables.
 
 ## Tech stack

@@ -40,3 +40,5 @@ Current phase: Phase 1
 - Docker ports bind to 127.0.0.1 only. Change all default passwords.
 - Run git status before every commit: data/, .venv/ and secrets must not appear.
 - BigQuery: load jobs only (no streaming inserts), partitioned tables, check bytes processed before running.
+- Never run docker compose config without --quiet: it prints resolved secrets from .env.
+- Phase 2 extract uses a separate read-only role (SELECT only on sap_source), not fin_admin.
