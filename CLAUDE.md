@@ -16,7 +16,7 @@ with quarantine, reconciliation and failure alerts. No real company data is ever
 - Phase 5: GitHub Actions CI (ruff, pytest, dbt build on dev), runbook, final README
 - Phase 6 (optional): CDC with Debezium + Redpanda from PostgreSQL
 
-Current phase: Phase 0
+Current phase: Phase 1
 
 ## Data model
 - BigQuery datasets (US): fin_raw, fin_staging, fin_intermediate, fin_marts, fin_quarantine, fin_ops
