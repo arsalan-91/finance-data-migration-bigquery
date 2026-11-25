@@ -16,7 +16,7 @@ with quarantine, reconciliation and failure alerts. No real company data is ever
 - Phase 5: GitHub Actions CI (ruff, pytest, dbt build on dev), runbook, final README
 - Phase 6 (optional): CDC with Debezium + Redpanda from PostgreSQL
 
-Current phase: Phase 1
+Current phase: Phase 2
 
 ## Data model
 - BigQuery datasets (US): fin_raw, fin_staging, fin_intermediate, fin_marts, fin_quarantine, fin_ops
@@ -27,6 +27,19 @@ Current phase: Phase 1
 - Loads are idempotent (MERGE on key). Running a load twice must not duplicate rows.
 - PostgreSQL raw source tables have no PRIMARY KEY and no NOT NULL constraints: COPY reads
   empty CSV fields as NULL, and missing_key rows must reach fin_raw so dbt can detect them.
+
+## GCP
+- Project ID: fin-elt-portfolio; location: US (all datasets)
+- Billing: pay-as-you-go with cost controls: BigQuery custom quotas QueryUsagePerDay and
+  QueryUsagePerUserPerDay set to 10 GiB, budget alert at 1 USD
+- Datasets: fin_raw, fin_staging, fin_intermediate, fin_marts, fin_quarantine, fin_ops
+- Auth: Application Default Credentials only. Never create, download or use service account key files.
+- Rules:
+  - Dry-run every new query (bq query --dry_run) and check bytes processed before running it.
+  - Never query public datasets.
+  - Set maximum_bytes_billed in dbt profiles.
+  - Do not enable new GCP services or APIs without the owner's approval.
+  - Never write personal email addresses or the billing account ID in any file.
 
 ## Conventions
 - dbt: stg_<source>__<entity>, int_<entity>__<verb>, fct_<subject>_<grain>, dim_<entity>

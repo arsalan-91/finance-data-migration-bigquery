@@ -12,7 +12,7 @@ row-count reconciliation and failure alerts.
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Repository, synthetic data generator, sample data | Done |
-| 1 | PostgreSQL 16 in Docker, GCP project, BigQuery datasets | In progress (PostgreSQL source done, GCP pending) |
+| 1 | PostgreSQL 16 in Docker, GCP project, BigQuery datasets | Done (PostgreSQL source + BigQuery datasets) |
 | 2 | Incremental extract & load (watermark, load jobs, run tracker) | Planned |
 | 3 | dbt: sources, quarantine, staging, intermediate, marts, tests | Planned |
 | 4 | Airflow DAG: load → dbt build → reconcile, alerts | Planned |
@@ -196,7 +196,7 @@ To stop the container and keep the data: `docker compose down`.
 
 - Synthetic data only; no real company data.
 - No secrets in the repository: `.env` files, keys and credentials are git-ignored.
-- Google Cloud access will use Application Default Credentials. No service account key files.
+- Google Cloud access uses Application Default Credentials. No service account key files.
 - Docker ports bind to `127.0.0.1` only, and the database password lives only in the git-ignored `.env`.
 - BigQuery: batch load jobs only (no streaming inserts) and partitioned tables.
 
